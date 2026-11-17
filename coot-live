@@ -1,0 +1,16 @@
+#!/bin/sh
+# Start Phenix's Coot 1.3.4 with its JSON-RPC listener on localhost:9090,
+# so the "coot-live" MCP server (Phenix's coot_mcp_socket_bridge.py) can drive it.
+# Usage: coot-live [--pdb model.pdb] [--auto maps.mtz] ...  (args go straight to Coot)
+PHENIX="${PHENIX:-/Applications/phenix-2.3rc2-6237}"   # override with: PHENIX=/path/to/phenix coot-live
+if lsof -nP -iTCP:9090 -sTCP:LISTEN >/dev/null 2>&1; then
+  echo "coot-live: port 9090 is already in use (another Coot with the listener is running?):" >&2
+  lsof -nP -iTCP:9090 -sTCP:LISTEN >&2
+  echo "Quit that Coot first, or use it - the coot-live MCP server will talk to it." >&2
+  exit 1
+fi
+export COOT_PREFIX="$PHENIX"
+export COOT_DATA_DIR="$PHENIX/share/coot"
+unset PYTHONHOME PYTHONPATH
+exec "$PHENIX/bin/coot" --no-state-script \
+  --script "$PHENIX/lib/python3.11/site-packages/phenix/gui/chat/coot_start_rpc.py" "$@"
